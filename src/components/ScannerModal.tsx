@@ -25,7 +25,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
     ];
 
     scannerRef.current.start(
-      { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" } as any] },
+      { facingMode: "environment", width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } },
       {
         fps: 15,
         formatsToSupport: formatsToSupport,
