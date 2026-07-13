@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { google } from 'googleapis';
 import cookieParser from 'cookie-parser';
 
@@ -201,13 +200,13 @@ app.post('/api/sheets/:spreadsheetId/logs', async (req, res) => {
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else if (!process.env.VERCEL) {
-    // در محیط ورسل نیازی به این بخش نیست چون فایل‌های استاتیک توسط خود ورسل سرو می‌شوند
+  } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
@@ -215,14 +214,14 @@ async function startServer() {
     });
   }
 
-  // ورسل خودش سرور را اجرا می‌کند، پس نیازی به listen کردن نیست
+  // Only start the server if not running on Vercel
   if (!process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   }
 }
+
 startServer();
 
-// این خط برای ورسل بسیار حیاتی است
 export default app;
