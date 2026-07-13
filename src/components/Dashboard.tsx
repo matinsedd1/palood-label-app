@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Product } from '../types';
-import { Search, RefreshCw, Camera, Keyboard } from 'lucide-react';
+import { Search, RefreshCw, Camera, Keyboard, X } from 'lucide-react';
 import CameraScanner from './CameraScanner';
 import LabelPreview from './LabelPreview';
 
@@ -36,6 +36,10 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
 
   const handleScan = useCallback((scannedCode: string) => {
     if (!scannedCode) return;
+    
+    setScannerMode('none');
+    setQuery(scannedCode);
+    
     const match = products.find(p => {
       if (p.barcode === scannedCode || p.code === scannedCode) return true;
       if (p.barcode2 && p.barcode2.includes(scannedCode)) return true;
@@ -44,10 +48,9 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
 
     if (match) {
       setSelectedProduct(match);
-      setScannerMode('none');
-      // Update the query to the matched barcode so it doesn't immediately clear
-      setQuery(scannedCode);
     } else {
+      // Not found, maybe show a toast or alert, but the query is already set
+      // so it will show "No results" in the dropdown area naturally.
       alert(`کالایی با بارکد ${scannedCode} یافت نشد.`);
     }
   }, [products]);
@@ -116,6 +119,14 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
               placeholder="جستجو بر اساس نام، کد یا اسکن بارکد..."
               className="w-full pr-10 pl-10 py-3 md:py-2 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-full text-sm transition-all dark:bg-slate-700 dark:focus:bg-slate-800 outline-none"
             />
+            {query && (
+              <button 
+                onClick={() => setQuery('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
             
             {/* Search Results (Absolute Dropdown) */}

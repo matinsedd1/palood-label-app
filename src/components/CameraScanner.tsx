@@ -12,7 +12,10 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
 
   useEffect(() => {
     let isComponentMounted = true;
-    const html5QrCode = new Html5Qrcode("inline-reader", { verbose: false });
+    const html5QrCode = new Html5Qrcode("inline-reader", { 
+      verbose: false,
+      useBarCodeDetectorIfSupported: true
+    });
     scannerRef.current = html5QrCode;
     
     const formatsToSupport = [
@@ -31,8 +34,8 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
         formatsToSupport: formatsToSupport,
         videoConstraints: {
           facingMode: "environment",
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
           advanced: [{ focusMode: "continuous" } as any]
         }
       },
