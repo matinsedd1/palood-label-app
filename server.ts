@@ -46,11 +46,11 @@ app.get('/api/oauth/callback', async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     
     res.cookie('auth_token', JSON.stringify(tokens), {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+});
     
     res.redirect('/');
   } catch (error) {
@@ -69,7 +69,11 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('auth_token', { httpOnly: true, secure: true, sameSite: 'none' });
+  res.clearCookie('auth_token', { 
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === 'production', 
+    sameSite: 'lax' 
+  });
   res.json({ success: true });
 });
 
