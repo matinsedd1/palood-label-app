@@ -22,6 +22,21 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
       Html5QrcodeSupportedFormats.UPC_E,
     ];
 
+    const logCapabilities = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints) {
+          console.log("Supported constraints:", navigator.mediaDevices.getSupportedConstraints());
+        }
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          console.log("Video devices:", devices.filter(d => d.kind === 'videoinput'));
+        }
+      } catch (e) {
+        console.error("Failed to check capabilities:", e);
+      }
+    };
+    logCapabilities();
+
     scannerRef.current.start(
       { facingMode: "environment", width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } },
       {
@@ -64,7 +79,12 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
         // نادیده گرفتن خطاهای پیوسته
       }
     ).catch(err => {
-      setError("خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.");
+      console.error("Camera start error detailed:", err);
+      let errMsg = "خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.";
+      if (err) {
+        errMsg += `\nجزئیات: ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}`;
+      }
+      setError(errMsg);
     });
 
     return () => {
@@ -96,7 +116,7 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
       `}</style>
 
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500 text-sm p-4 text-center z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/90 text-red-500 text-sm p-4 text-center z-20 whitespace-pre-wrap max-h-full overflow-y-auto">
           {error}
         </div>
       )}

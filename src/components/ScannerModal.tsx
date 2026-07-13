@@ -24,6 +24,21 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
       Html5QrcodeSupportedFormats.UPC_E,
     ];
 
+    const logCapabilities = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints) {
+          console.log("Supported constraints:", navigator.mediaDevices.getSupportedConstraints());
+        }
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          console.log("Video devices:", devices.filter(d => d.kind === 'videoinput'));
+        }
+      } catch (e) {
+        console.error("Failed to check capabilities:", e);
+      }
+    };
+    logCapabilities();
+
     scannerRef.current.start(
       { facingMode: "environment", width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } },
       {
@@ -68,7 +83,12 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
         // نادیده گرفتن خطاها
       }
     ).catch(err => {
-      setError("خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.");
+      console.error("Camera start error detailed:", err);
+      let errMsg = "خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.";
+      if (err) {
+        errMsg += `\nجزئیات: ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}`;
+      }
+      setError(errMsg);
     });
 
     return () => {
@@ -106,7 +126,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
             }
           `}</style>
         </div>
-        {error && <div className="p-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 text-center font-medium">{error}</div>}
+        {error && <div className="p-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 text-center font-medium whitespace-pre-wrap max-h-40 overflow-y-auto">{error}</div>}
         <div className="p-5 text-sm text-slate-500 dark:text-slate-400 text-center bg-slate-50 dark:bg-slate-900/50">
           بارکد کالا را در کادر قرمز قرار دهید
         </div>
