@@ -13,7 +13,9 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    scannerRef.current = new Html5Qrcode("modal-reader", { verbose: false });
+    let isComponentMounted = true;
+    const html5QrCode = new Html5Qrcode("modal-reader", { verbose: false });
+    scannerRef.current = html5QrCode;
     
     const formatsToSupport = [
       Html5QrcodeSupportedFormats.CODE_128,
@@ -24,27 +26,11 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
       Html5QrcodeSupportedFormats.UPC_E,
     ];
 
-    const logCapabilities = async () => {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints) {
-          console.log("Supported constraints:", navigator.mediaDevices.getSupportedConstraints());
-        }
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          console.log("Video devices:", devices.filter(d => d.kind === 'videoinput'));
-        }
-      } catch (e) {
-        console.error("Failed to check capabilities:", e);
-      }
-    };
-    logCapabilities();
-
-    scannerRef.current.start(
+    html5QrCode.start(
       { facingMode: "environment" },
       {
         fps: 15,
         formatsToSupport: formatsToSupport,
-        qrbox: { width: 300, height: 150 },
         videoConstraints: {
           facingMode: "environment",
           width: { ideal: 1280, max: 1920 },
@@ -53,7 +39,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
         }
       },
       (decodedText) => {
-        if (scannerRef.current && !isSuccess) {
+        if (isComponentMounted && scannerRef.current && !isSuccess) {
           setIsSuccess(true);
           
           try {
@@ -70,17 +56,19 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
           } catch(e) {}
 
           setTimeout(() => {
-            if (scannerRef.current?.isScanning) {
-              scannerRef.current.stop().then(() => {
+            if (isComponentMounted) {
+              if (scannerRef.current?.isScanning) {
+                scannerRef.current.stop().then(() => {
+                  onScan(decodedText);
+                  onClose();
+                }).catch(() => {
+                  onScan(decodedText);
+                  onClose();
+                });
+              } else {
                 onScan(decodedText);
                 onClose();
-              }).catch(() => {
-                onScan(decodedText);
-                onClose();
-              });
-            } else {
-              onScan(decodedText);
-              onClose();
+              }
             }
           }, 400);
         }
@@ -88,18 +76,25 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
       (errorMessage) => {
         // نادیده گرفتن خطاها
       }
-    ).catch(err => {
-      console.error("Camera start error detailed:", err);
-      let errMsg = "خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.";
-      if (err) {
-        errMsg += `\nجزئیات: ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}`;
+    ).then(() => {
+      if (!isComponentMounted) {
+        html5QrCode.stop().catch(() => {});
       }
-      setError(errMsg);
+    }).catch(err => {
+      if (isComponentMounted) {
+        console.error("Camera start error detailed:", err);
+        let errMsg = "خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.";
+        if (err) {
+          errMsg += `\nجزئیات: ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}`;
+        }
+        setError(errMsg);
+      }
     });
 
     return () => {
-      if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(() => {});
+      isComponentMounted = false;
+      if (html5QrCode.isScanning) {
+        html5QrCode.stop().catch(() => {});
       }
     };
   }, [onScan, onClose, isSuccess]);

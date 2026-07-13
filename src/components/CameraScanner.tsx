@@ -11,7 +11,9 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    scannerRef.current = new Html5Qrcode("inline-reader", { verbose: false });
+    let isComponentMounted = true;
+    const html5QrCode = new Html5Qrcode("inline-reader", { verbose: false });
+    scannerRef.current = html5QrCode;
     
     const formatsToSupport = [
       Html5QrcodeSupportedFormats.CODE_128,
@@ -22,27 +24,11 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
       Html5QrcodeSupportedFormats.UPC_E,
     ];
 
-    const logCapabilities = async () => {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints) {
-          console.log("Supported constraints:", navigator.mediaDevices.getSupportedConstraints());
-        }
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          console.log("Video devices:", devices.filter(d => d.kind === 'videoinput'));
-        }
-      } catch (e) {
-        console.error("Failed to check capabilities:", e);
-      }
-    };
-    logCapabilities();
-
-    scannerRef.current.start(
+    html5QrCode.start(
       { facingMode: "environment" },
       {
         fps: 15,
         formatsToSupport: formatsToSupport,
-        qrbox: { width: 300, height: 150 },
         videoConstraints: {
           facingMode: "environment",
           width: { ideal: 1280, max: 1920 },
@@ -51,7 +37,7 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
         }
       },
       (decodedText) => {
-        if (scannerRef.current && !isSuccess) {
+        if (isComponentMounted && scannerRef.current && !isSuccess) {
           setIsSuccess(true);
           
           // ایجاد صدای بوق
@@ -69,14 +55,16 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
           } catch(e) {}
           
           setTimeout(() => {
-            if (scannerRef.current?.isScanning) {
-              scannerRef.current.stop().then(() => {
+            if (isComponentMounted) {
+              if (scannerRef.current?.isScanning) {
+                scannerRef.current.stop().then(() => {
+                  onScan(decodedText);
+                }).catch(() => {
+                  onScan(decodedText);
+                });
+              } else {
                 onScan(decodedText);
-              }).catch(() => {
-                onScan(decodedText);
-              });
-            } else {
-              onScan(decodedText);
+              }
             }
           }, 400); // تاخیر کوتاه برای نمایش رنگ سبز
         }
@@ -84,18 +72,26 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
       (errorMessage) => {
         // نادیده گرفتن خطاهای پیوسته
       }
-    ).catch(err => {
-      console.error("Camera start error detailed:", err);
-      let errMsg = "خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.";
-      if (err) {
-        errMsg += `\nجزئیات: ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}`;
+    ).then(() => {
+      // اگر کامپوننت قبل از اتمام راه اندازی دوربین از بین رفته بود، دوربین را متوقف کن
+      if (!isComponentMounted) {
+        html5QrCode.stop().catch(() => {});
       }
-      setError(errMsg);
+    }).catch(err => {
+      if (isComponentMounted) {
+        console.error("Camera start error detailed:", err);
+        let errMsg = "خطا در دسترسی به دوربین. لطفاً دسترسی‌های لازم را بررسی کنید.";
+        if (err) {
+          errMsg += `\nجزئیات: ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}`;
+        }
+        setError(errMsg);
+      }
     });
 
     return () => {
-      if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(() => {});
+      isComponentMounted = false;
+      if (html5QrCode.isScanning) {
+        html5QrCode.stop().catch(() => {});
       }
     };
   }, [onScan, isSuccess]);
