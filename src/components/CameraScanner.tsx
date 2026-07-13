@@ -23,11 +23,11 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
     ];
 
     scannerRef.current.start(
-      { facingMode: "environment" },
+      { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" } as any] },
       {
-        fps: 20, // سرعت بالاتر برای اسکن بهتر
+        fps: 15,
         formatsToSupport: formatsToSupport,
-        // حذف qrbox برای اسکن کل تصویر که برای بارکدهای میله‌ای خیلی بهتر عمل میکند
+        qrbox: { width: 300, height: 150 },
       },
       (decodedText) => {
         if (scannerRef.current && !isSuccess) {
@@ -80,7 +80,7 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
       
       {/* overlay اسکنر */}
       <div className="absolute inset-0 pointer-events-none z-10 flex flex-col items-center justify-center">
-        <div className={`w-[80%] max-w-[300px] h-[120px] sm:h-[150px] border-4 transition-all duration-300 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-[0_0_0_4000px_rgba(0,0,0,0.5)] ${isSuccess ? 'border-green-500 bg-green-500/20 scale-105' : 'border-red-500 bg-red-500/10'}`}>
+        <div className={`w-[300px] h-[150px] border-4 transition-all duration-300 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-[0_0_0_4000px_rgba(0,0,0,0.5)] ${isSuccess ? 'border-green-500 bg-green-500/20 scale-105' : 'border-red-500 bg-red-500/10'}`}>
           {!isSuccess && (
             <div className="absolute left-0 right-0 h-[2px] bg-red-500 opacity-70 shadow-[0_0_8px_2px_rgba(239,68,68,0.8)]" style={{ animation: 'scan-line 2s infinite ease-in-out' }}></div>
           )}

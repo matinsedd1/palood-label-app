@@ -25,10 +25,11 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
     ];
 
     scannerRef.current.start(
-      { facingMode: "environment" },
+      { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" } as any] },
       {
-        fps: 20,
+        fps: 15,
         formatsToSupport: formatsToSupport,
+        qrbox: { width: 300, height: 150 },
       },
       (decodedText) => {
         if (scannerRef.current && !isSuccess) {
@@ -90,7 +91,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
           <div id="modal-reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
           
           <div className="absolute inset-0 pointer-events-none z-10 flex flex-col items-center justify-center">
-            <div className={`w-[80%] max-w-[300px] h-[150px] border-4 transition-all duration-300 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-[0_0_0_4000px_rgba(0,0,0,0.5)] ${isSuccess ? 'border-green-500 bg-green-500/20 scale-105' : 'border-red-500 bg-red-500/10'}`}>
+            <div className={`w-[300px] h-[150px] border-4 transition-all duration-300 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-[0_0_0_4000px_rgba(0,0,0,0.5)] ${isSuccess ? 'border-green-500 bg-green-500/20 scale-105' : 'border-red-500 bg-red-500/10'}`}>
               {!isSuccess && (
                 <div className="absolute left-0 right-0 h-[2px] bg-red-500 opacity-70 shadow-[0_0_8px_2px_rgba(239,68,68,0.8)]" style={{ animation: 'scan-line 2s infinite ease-in-out' }}></div>
               )}
