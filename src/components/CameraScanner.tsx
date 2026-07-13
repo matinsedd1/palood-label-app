@@ -38,11 +38,17 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
     logCapabilities();
 
     scannerRef.current.start(
-      { facingMode: "environment", width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } },
+      { facingMode: "environment" },
       {
         fps: 15,
         formatsToSupport: formatsToSupport,
         qrbox: { width: 300, height: 150 },
+        videoConstraints: {
+          facingMode: "environment",
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          advanced: [{ focusMode: "continuous" } as any]
+        }
       },
       (decodedText) => {
         if (scannerRef.current && !isSuccess) {

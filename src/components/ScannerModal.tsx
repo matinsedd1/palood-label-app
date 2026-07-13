@@ -46,6 +46,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
         formatsToSupport: formatsToSupport,
         qrbox: { width: 300, height: 150 },
         videoConstraints: {
+          facingMode: "environment",
           width: { ideal: 1280, max: 1920 },
           height: { ideal: 720, max: 1080 },
           advanced: [{ focusMode: "continuous" } as any]
