@@ -114,7 +114,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
           </button>
         </div>
         <div className="relative w-full h-[400px] bg-black overflow-hidden flex items-center justify-center">
-          <div id="modal-reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
+          <div id="modal-reader" className="w-full flex justify-center items-center"></div>
           
           <div className="absolute inset-0 pointer-events-none z-10 flex flex-col items-center justify-center">
             <div className={`w-[300px] h-[150px] border-4 transition-all duration-300 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-[0_0_0_4000px_rgba(0,0,0,0.5)] ${isSuccess ? 'border-green-500 bg-green-500/20 scale-105' : 'border-red-500 bg-red-500/10'}`}>
@@ -129,6 +129,9 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
               0% { top: 5%; }
               50% { top: 95%; }
               100% { top: 5%; }
+            }
+            #qr-shaded-region {
+              display: none !important;
             }
           `}</style>
         </div>

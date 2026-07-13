@@ -102,7 +102,7 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
 
   return (
     <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center overflow-hidden">
-      <div id="inline-reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
+      <div id="inline-reader" className="w-full flex justify-center items-center"></div>
       
       {/* overlay اسکنر */}
       <div className="absolute inset-0 pointer-events-none z-10 flex flex-col items-center justify-center">
@@ -118,6 +118,9 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
           0% { top: 5%; }
           50% { top: 95%; }
           100% { top: 5%; }
+        }
+        #qr-shaded-region {
+          display: none !important;
         }
       `}</style>
 
