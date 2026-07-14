@@ -64,7 +64,13 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
           } catch(e) {}
           
           setTimeout(() => {
-            if (isComponentMounted) {
+            if (isComponentMounted && scannerRef.current?.isScanning) {
+              scannerRef.current.stop().then(() => {
+                onScan(decodedText);
+              }).catch(() => {
+                onScan(decodedText);
+              });
+            } else if (isComponentMounted) {
               onScan(decodedText);
             }
           }, 400); // تاخیر کوتاه برای نمایش رنگ سبز

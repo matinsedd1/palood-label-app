@@ -65,7 +65,15 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
           } catch(e) {}
 
           setTimeout(() => {
-            if (isComponentMounted) {
+            if (isComponentMounted && scannerRef.current?.isScanning) {
+              scannerRef.current.stop().then(() => {
+                onScan(decodedText);
+                onClose();
+              }).catch(() => {
+                onScan(decodedText);
+                onClose();
+              });
+            } else if (isComponentMounted) {
               onScan(decodedText);
               onClose();
             }
