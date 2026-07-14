@@ -34,7 +34,10 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
     setFilteredProducts(results.slice(0, 50)); // Limit results
   }, [query, products]);
 
-  const handleScan = useCallback((scannedCode: string) => {
+  const handleScan = useCallback((rawScannedCode: string) => {
+    if (!rawScannedCode) return;
+    
+    const scannedCode = rawScannedCode.trim();
     if (!scannedCode) return;
     
     setScannerMode('none');
@@ -51,7 +54,6 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
     } else {
       // Not found, maybe show a toast or alert, but the query is already set
       // so it will show "No results" in the dropdown area naturally.
-      alert(`کالایی با بارکد ${scannedCode} یافت نشد.`);
     }
   }, [products]);
 
@@ -121,7 +123,11 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
             />
             {query && (
               <button 
-                onClick={() => setQuery('')}
+                onClick={() => {
+                  setQuery('');
+                  setSelectedProduct(null);
+                  setScannerMode('none');
+                }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
               >
                 <X className="w-5 h-5" />

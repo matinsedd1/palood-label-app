@@ -34,11 +34,12 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
       {
         fps: 15,
         formatsToSupport: formatsToSupport,
+        qrbox: { width: 300, height: 150 },
         videoConstraints: {
           facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          advanced: [{ focusMode: "continuous" } as any]
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ focusMode: "continuous" } as any, { zoom: 2.0 } as any]
         }
       },
       (decodedText) => {
@@ -60,18 +61,8 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
 
           setTimeout(() => {
             if (isComponentMounted) {
-              if (scannerRef.current?.isScanning) {
-                scannerRef.current.stop().then(() => {
-                  onScan(decodedText);
-                  onClose();
-                }).catch(() => {
-                  onScan(decodedText);
-                  onClose();
-                });
-              } else {
-                onScan(decodedText);
-                onClose();
-              }
+              onScan(decodedText);
+              onClose();
             }
           }, 400);
         }
