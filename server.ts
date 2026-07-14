@@ -9,10 +9,21 @@ const PORT = 3000;
 app.use(express.json());
 app.use(cookieParser());
 
-const getOAuth2Client = () => {
+const getOAuth2Client = (req?: express.Request) => {
   const clientId = process.env.GOOGLE_CLIENT_ID || process.env.OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.OAUTH_CLIENT_SECRET;
-  const appUrl = process.env.APP_URL;
+  
+  let appUrl = process.env.APP_URL;
+  if (!appUrl && req) {
+    const host = req.get('host');
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    if (host) {
+      appUrl = `${protocol}://${host}`;
+    }
+  }
+
+  // Remove trailing slash to prevent redirect_uri_mismatch
+  appUrl = appUrl?.replace(/\/$/, '');
 
   if (!clientId || !clientSecret || !appUrl) {
     throw new Error('OAuth configuration missing');
@@ -25,9 +36,16 @@ const getOAuth2Client = () => {
   );
 };
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production' || !!process.env.VERCEL,
+  sameSite: 'lax' as const,
+  path: '/'
+};
+
 app.get('/api/auth/url', (req, res) => {
   try {
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = getOAuth2Client(req);
     const url = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -42,7 +60,7 @@ app.get('/api/auth/url', (req, res) => {
 app.get('/api/oauth/callback', async (req, res) => {
   const code = req.query.code as string;
   try {
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = getOAuth2Client(req);
     const { tokens } = await oauth2Client.getToken(code);
     
     // Remove id_token to prevent the cookie from exceeding the browser's 4KB size limit
@@ -50,17 +68,15 @@ app.get('/api/oauth/callback', async (req, res) => {
       delete tokens.id_token;
     }
     
-      res.cookie('auth_token', JSON.stringify(tokens), {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-      });
+    res.cookie('auth_token', JSON.stringify(tokens), {
+      ...cookieOptions,
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
     
     res.redirect('/');
-  } catch (error) {
+  } catch (error: any) {
     console.error('OAuth callback error:', error);
-    res.status(500).send('Authentication failed');
+    res.status(500).send('Authentication failed: ' + error.message);
   }
 });
 
@@ -78,11 +94,7 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('auth_token', { 
-    httpOnly: true, 
-    secure: true, 
-    sameSite: 'none' 
-  });
+  res.clearCookie('auth_token', cookieOptions);
   res.json({ success: true });
 });
 
@@ -94,7 +106,7 @@ app.get('/api/sheets/:spreadsheetId', async (req, res) => {
 
   try {
     const tokens = JSON.parse(token);
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = getOAuth2Client(req);
     oauth2Client.setCredentials(tokens);
 
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
@@ -120,7 +132,7 @@ app.get('/api/sheets/:spreadsheetId', async (req, res) => {
     res.json(response.data.values);
   } catch (error: any) {
     if (!(error.message && error.message.includes('insufficient authentication scopes'))) { console.error('Sheets API Error:', error); }
-    if (error.message && error.message.includes('insufficient authentication scopes')) { res.clearCookie('auth_token', { httpOnly: true, secure: true, sameSite: 'none' }); return res.status(403).json({ error: 'دسترسی به گوگل شیت نیاز به تایید مجدد دارد. لطفا دوباره وارد شوید.' }); } res.status(500).json({ error: error.message || 'Failed to fetch sheet' });
+    if (error.message && error.message.includes('insufficient authentication scopes')) { res.clearCookie('auth_token', cookieOptions); return res.status(403).json({ error: 'دسترسی به گوگل شیت نیاز به تایید مجدد دارد. لطفا دوباره وارد شوید.' }); } res.status(500).json({ error: error.message || 'Failed to fetch sheet' });
   }
 });
 
@@ -130,7 +142,7 @@ app.get('/api/sheets/:spreadsheetId/logs', async (req, res) => {
 
   try {
     const tokens = JSON.parse(token);
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = getOAuth2Client(req);
     oauth2Client.setCredentials(tokens);
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
     const spreadsheetId = req.params.spreadsheetId;
@@ -151,7 +163,7 @@ app.get('/api/sheets/:spreadsheetId/logs', async (req, res) => {
     }
   } catch (error: any) {
     if (!(error.message && error.message.includes('insufficient authentication scopes'))) { console.error('Sheets Logs GET API Error:', error); }
-    if (error.message && error.message.includes('insufficient authentication scopes')) { res.clearCookie('auth_token', { httpOnly: true, secure: true, sameSite: 'none' }); return res.status(403).json({ error: 'دسترسی به گوگل شیت نیاز به تایید مجدد دارد. لطفا دوباره وارد شوید.' }); } res.status(500).json({ error: error.message || 'Failed to fetch logs' });
+    if (error.message && error.message.includes('insufficient authentication scopes')) { res.clearCookie('auth_token', cookieOptions); return res.status(403).json({ error: 'دسترسی به گوگل شیت نیاز به تایید مجدد دارد. لطفا دوباره وارد شوید.' }); } res.status(500).json({ error: error.message || 'Failed to fetch logs' });
   }
 });
 
@@ -161,7 +173,7 @@ app.post('/api/sheets/:spreadsheetId/logs', async (req, res) => {
 
   try {
     const tokens = JSON.parse(token);
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = getOAuth2Client(req);
     oauth2Client.setCredentials(tokens);
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
     const spreadsheetId = req.params.spreadsheetId;
@@ -207,7 +219,7 @@ app.post('/api/sheets/:spreadsheetId/logs', async (req, res) => {
     res.json({ success: true });
   } catch (error: any) {
     if (!(error.message && error.message.includes('insufficient authentication scopes'))) { console.error('Sheets Logs POST API Error:', error); }
-    if (error.message && error.message.includes('insufficient authentication scopes')) { res.clearCookie('auth_token', { httpOnly: true, secure: true, sameSite: 'none' }); return res.status(403).json({ error: 'دسترسی به گوگل شیت نیاز به تایید مجدد دارد. لطفا دوباره وارد شوید.' }); } res.status(500).json({ error: error.message || 'Failed to append log' });
+    if (error.message && error.message.includes('insufficient authentication scopes')) { res.clearCookie('auth_token', cookieOptions); return res.status(403).json({ error: 'دسترسی به گوگل شیت نیاز به تایید مجدد دارد. لطفا دوباره وارد شوید.' }); } res.status(500).json({ error: error.message || 'Failed to append log' });
   }
 });
 

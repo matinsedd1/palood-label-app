@@ -25,7 +25,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    fetch('/api/auth/status')
+    fetch('/api/auth/status', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => setAuthenticated(data.authenticated))
       .catch(() => setAuthenticated(false));
