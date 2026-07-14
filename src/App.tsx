@@ -25,7 +25,17 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    fetch('/api/auth/status', { cache: 'no-store' })
+    // اضافه کردن یک عدد تصادفی (تایماستمپ) برای دور زدن قطعیِ کش Service Worker
+    const timestamp = new Date().getTime();
+    
+    fetch(`/api/auth/status?t=${timestamp}`, { 
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
       .then(res => res.json())
       .then(data => setAuthenticated(data.authenticated))
       .catch(() => setAuthenticated(false));

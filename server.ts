@@ -73,6 +73,11 @@ app.get('/api/oauth/callback', async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
     
+    // جلوگیری از کش شدنِ عملیات ریدایرکت توسط سافاری موبایل
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     res.redirect('/');
   } catch (error: any) {
     console.error('OAuth callback error:', error);
