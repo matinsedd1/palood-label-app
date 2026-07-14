@@ -65,6 +65,10 @@ app.get('/api/oauth/callback', async (req, res) => {
 });
 
 app.get('/api/auth/status', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
   const token = req.cookies.auth_token;
   if (token) {
     res.json({ authenticated: true });
