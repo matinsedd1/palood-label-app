@@ -16,12 +16,6 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
     isSuccessRef.current = false;
     setIsSuccess(false);
     
-    const html5QrCode = new Html5Qrcode("inline-reader", { 
-      verbose: false,
-      useBarCodeDetectorIfSupported: true
-    });
-    scannerRef.current = html5QrCode;
-    
     const formatsToSupport = [
       Html5QrcodeSupportedFormats.CODE_128,
       Html5QrcodeSupportedFormats.EAN_13,
@@ -30,12 +24,18 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
       Html5QrcodeSupportedFormats.UPC_A,
       Html5QrcodeSupportedFormats.UPC_E,
     ];
-
+    
+    const html5QrCode = new Html5Qrcode("inline-reader", { 
+      verbose: false,
+      useBarCodeDetectorIfSupported: true,
+      formatsToSupport: formatsToSupport
+    });
+    scannerRef.current = html5QrCode;
+    
     html5QrCode.start(
       { facingMode: "environment" },
       {
         fps: 15,
-        formatsToSupport: formatsToSupport,
         qrbox: { width: 300, height: 150 },
         videoConstraints: {
           facingMode: "environment",

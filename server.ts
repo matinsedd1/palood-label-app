@@ -8,10 +8,17 @@ const PORT = 3000;
 app.use(express.json());
 
 const getGoogleAuth = () => {
+  const client_email = process.env.GOOGLE_CLIENT_EMAIL;
+  const private_key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (!client_email || !private_key) {
+    throw new Error('Google authentication configuration is missing. Please set GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY environment variables.');
+  }
+
   return new google.auth.GoogleAuth({
     credentials: {
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      client_email,
+      private_key,
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
