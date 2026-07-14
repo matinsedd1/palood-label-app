@@ -11,9 +11,13 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
   const [error, setError] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isSuccessRef = useRef(false);
 
   useEffect(() => {
     let isComponentMounted = true;
+    isSuccessRef.current = false;
+    setIsSuccess(false);
+
     const html5QrCode = new Html5Qrcode("modal-reader", { 
       verbose: false,
       useBarCodeDetectorIfSupported: true
@@ -43,7 +47,8 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
         }
       },
       (decodedText) => {
-        if (isComponentMounted && scannerRef.current && !isSuccess) {
+        if (isComponentMounted && scannerRef.current && !isSuccessRef.current) {
+          isSuccessRef.current = true;
           setIsSuccess(true);
           
           try {
@@ -91,7 +96,7 @@ export default function ScannerModal({ onScan, onClose }: ScannerModalProps) {
         html5QrCode.stop().catch(() => {});
       }
     };
-  }, [onScan, onClose, isSuccess]);
+  }, [onScan, onClose]);
 
   return (
     <div className="fixed inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-4 print:hidden backdrop-blur-sm">

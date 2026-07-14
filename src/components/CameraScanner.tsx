@@ -7,11 +7,15 @@ interface CameraScannerProps {
 
 export default function CameraScanner({ onScan }: CameraScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isSuccessRef = useRef(false);
   const [error, setError] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     let isComponentMounted = true;
+    isSuccessRef.current = false;
+    setIsSuccess(false);
+    
     const html5QrCode = new Html5Qrcode("inline-reader", { 
       verbose: false,
       useBarCodeDetectorIfSupported: true
@@ -41,7 +45,8 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
         }
       },
       (decodedText) => {
-        if (isComponentMounted && scannerRef.current && !isSuccess) {
+        if (isComponentMounted && scannerRef.current && !isSuccessRef.current) {
+          isSuccessRef.current = true;
           setIsSuccess(true);
           
           // ایجاد صدای بوق
@@ -90,7 +95,7 @@ export default function CameraScanner({ onScan }: CameraScannerProps) {
         html5QrCode.stop().catch(() => {});
       }
     };
-  }, [onScan, isSuccess]);
+  }, [onScan]);
 
   return (
     <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center overflow-hidden">
