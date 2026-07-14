@@ -7,7 +7,6 @@ import { Moon, Sun, Settings, History } from 'lucide-react';
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [spreadsheetId, setSpreadsheetId] = useState(() => localStorage.getItem('spreadsheetId') || '');
   const [isConfiguring, setIsConfiguring] = useState(!spreadsheetId);
   const [showLogs, setShowLogs] = useState(false);
@@ -23,42 +22,6 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
-
-  useEffect(() => {
-    // اضافه کردن یک عدد تصادفی (تایماستمپ) برای دور زدن قطعیِ کش Service Worker
-    const timestamp = new Date().getTime();
-    
-    fetch(`/api/auth/status?t=${timestamp}`, { 
-      method: 'GET',
-      cache: 'no-store',
-      credentials: 'include', // <--- این خط برای آیفون بسیار حیاتی است
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    })
-      .then(res => res.json())
-      .then(data => setAuthenticated(data.authenticated))
-      .catch(() => setAuthenticated(false));
-  }, []);
-
-  const handleLogin = async () => {
-    try {
-      const res = await fetch('/api/auth/url');
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error('Login failed', err);
-    }
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setAuthenticated(false);
-    setProducts([]);
-  };
 
   const loadData = async () => {
     if (!spreadsheetId) return;
@@ -77,14 +40,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (authenticated && spreadsheetId && !isConfiguring && products.length === 0) {
+    if (spreadsheetId && !isConfiguring && products.length === 0) {
       loadData();
     }
-  }, [authenticated, spreadsheetId, isConfiguring]);
-
-  if (authenticated === null) {
-    return <div className="min-h-screen flex items-center justify-center">در حال بارگذاری...</div>;
-  }
+  }, [spreadsheetId, isConfiguring]);
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
@@ -94,44 +53,27 @@ export default function App() {
             <img src="/logo.png" alt="پالود پخش پارس" className="h-6 sm:h-8 object-contain dark:brightness-200" />
             <span className="text-[8px] sm:text-[10px] text-slate-500 font-bold mt-1 tracking-wider">اتیکت قفسه</span>
           </div>
-          {authenticated && (
-            <div className="hidden sm:flex mr-4 pr-4 border-r border-slate-200 dark:border-slate-700 h-8 items-center">
-              <p className="text-xs text-slate-500 font-medium">متصل به Google Sheets: انبار مرکزی</p>
-            </div>
-          )}
+          <div className="hidden sm:flex mr-4 pr-4 border-r border-slate-200 dark:border-slate-700 h-8 items-center">
+            <p className="text-xs text-slate-500 font-medium">متصل به Google Sheets: انبار مرکزی</p>
+          </div>
         </div>
         <div className="flex items-center gap-1 sm:gap-3">
           <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          {authenticated && !isConfiguring && spreadsheetId && (
+          {!isConfiguring && spreadsheetId && (
             <button onClick={() => setShowLogs(true)} className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors" title="تاریخچه فعالیت‌ها">
               <History className="w-5 h-5" />
             </button>
           )}
-          {authenticated && (
-            <button onClick={() => setIsConfiguring(!isConfiguring)} className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">
-              <Settings className="w-5 h-5" />
-            </button>
-          )}
-          {authenticated ? (
-            <button onClick={handleLogout} className="text-sm px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200">خروج</button>
-          ) : (
-            <button onClick={handleLogin} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">ورود</button>
-          )}
+          <button onClick={() => setIsConfiguring(!isConfiguring)} className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
       <main className="flex-1 flex overflow-hidden p-6 gap-6 w-full print:p-0 print:m-0">
-        {!authenticated ? (
-          <div className="m-auto text-center py-20 flex flex-col items-center overflow-y-auto">
-            <h2 className="text-2xl font-semibold mb-4">به سیستم چاپ لیبل خوش آمدید</h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-lg">
-              برای شروع، لطفاً با حساب کاربری گوگل خود وارد شوید. این سیستم برای همگام‌سازی اطلاعات کالاها نیازمند دسترسی به Google Sheets است.
-            </p>
-            <button onClick={handleLogin} className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">ورود و اتصال به گوگل شیت</button>
-          </div>
-        ) : isConfiguring ? (
+        {isConfiguring ? (
           <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mt-10 h-fit">
             <h2 className="text-lg font-bold mb-4">تنظیمات اتصال به شیت</h2>
             <div className="mb-4">
