@@ -57,28 +57,60 @@ app.get('/api/auth/url', (req, res) => {
   }
 });
 
+// --- ۱. این روت جدید را دقیقاً بالای app.get('/api/oauth/callback') اضافه کنید ---
+app.post('/api/auth/set-cookie', (req, res) => {
+  const tokens = req.body.tokens;
+  res.cookie('auth_token', JSON.stringify(tokens), {
+    ...cookieOptions,
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  });
+  res.json({ success: true });
+});
+
 app.get('/api/oauth/callback', async (req, res) => {
   const code = req.query.code as string;
   try {
     const oauth2Client = getOAuth2Client(req);
     const { tokens } = await oauth2Client.getToken(code);
     
-    // Remove id_token to prevent the cookie from exceeding the browser's 4KB size limit
     if (tokens.id_token) {
       delete tokens.id_token;
     }
     
-    res.cookie('auth_token', JSON.stringify(tokens), {
-      ...cookieOptions,
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
-    
-    // جلوگیری از کش شدنِ عملیات ریدایرکت توسط سافاری موبایل
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
-    res.redirect('/');
+    // ارسال یک صفحه لودینگ که کوکی را از داخل خود مرورگر (برای دور زدن اپل) ذخیره میکند
+    res.status(200).send(`
+      <html dir="rtl">
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta charset="utf-8">
+          <title>در حال ورود...</title>
+          <style>
+            body { font-family: Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8fafc; color: #334155; margin: 0; }
+            .loader { border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 16px; margin-left: auto; margin-right: auto;}
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          </style>
+        </head>
+        <body>
+          <div style="text-align: center;">
+            <div class="loader"></div>
+            <h3>تایید نهایی امنیتی...</h3>
+            <p>لطفاً چند لحظه صبر کنید</p>
+          </div>
+          <script>
+            // ارسال توکن به سرور خودمان با ریکوئست داخلی تا آیفون کوکی را مسدود نکند
+            fetch('/api/auth/set-cookie', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tokens: ${JSON.stringify(tokens)} })
+            }).then(function() {
+              window.location.href = '/'; // بازگشت به نرمافزار
+            }).catch(function(err) {
+              document.body.innerHTML = '<h3 style="color:red;">خطا در ارتباط. لطفا صفحه را رفرش کنید.</h3>';
+            });
+          </script>
+        </body>
+      </html>
+    `);
   } catch (error: any) {
     console.error('OAuth callback error:', error);
     res.status(500).send('Authentication failed: ' + error.message);

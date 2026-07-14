@@ -31,6 +31,7 @@ export default function App() {
     fetch(`/api/auth/status?t=${timestamp}`, { 
       method: 'GET',
       cache: 'no-store',
+      credentials: 'include', // <--- این خط برای آیفون بسیار حیاتی است
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
