@@ -45,6 +45,11 @@ app.get('/api/oauth/callback', async (req, res) => {
     const oauth2Client = getOAuth2Client();
     const { tokens } = await oauth2Client.getToken(code);
     
+    // Remove id_token to prevent the cookie from exceeding the browser's 4KB size limit
+    if (tokens.id_token) {
+      delete tokens.id_token;
+    }
+    
       res.cookie('auth_token', JSON.stringify(tokens), {
         httpOnly: true,
         secure: true,
