@@ -6,7 +6,7 @@ import ActivityLogModal from './components/ActivityLogModal';
 import { Moon, Sun, Settings, History } from 'lucide-react';
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [spreadsheetId, setSpreadsheetId] = useState(() => localStorage.getItem('spreadsheetId') || '');
   const [isConfiguring, setIsConfiguring] = useState(!spreadsheetId);
   const [showLogs, setShowLogs] = useState(false);
@@ -46,8 +46,9 @@ export default function App() {
   }, [spreadsheetId, isConfiguring]);
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
-      <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm z-10 print:hidden">
+    <>
+      <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
+        <header className="h-16 flex items-center justify-between px-6 bg-white/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 shadow-sm z-10 print:hidden">
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex flex-col items-start">
             <img src="/logo.png" alt="پالود پخش پارس" className="h-6 sm:h-8 object-contain dark:brightness-200" />
@@ -72,29 +73,36 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden p-6 gap-6 w-full print:p-0 print:m-0">
+      <main className="flex-1 flex overflow-hidden p-6 gap-6 w-full print:p-0 print:m-0 relative z-0">
         {isConfiguring ? (
-          <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mt-10 h-fit">
-            <h2 className="text-lg font-bold mb-4">تنظیمات اتصال به شیت</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">شناسه شیت (Spreadsheet ID)</label>
-              <input 
-                type="text" 
-                value={spreadsheetId} 
-                onChange={(e) => setSpreadsheetId(e.target.value)} 
-                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="1BxiMvs0XRY..."
-              />
-              <p className="text-xs text-slate-500 mt-2">شناسه موجود در آدرس URL فایل گوگل شیت شما.</p>
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+            <div className="w-full max-w-md bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 transform transition-all z-10">
+              <h2 className="text-2xl font-bold mb-6 text-center text-slate-800 dark:text-white">تنظیمات اتصال به شیت</h2>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">شناسه شیت (Spreadsheet ID)</label>
+                <input 
+                  type="text" 
+                  value={spreadsheetId} 
+                  onChange={(e) => setSpreadsheetId(e.target.value)} 
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700/50 focus:ring-4 focus:ring-blue-500/30 outline-none transition-all font-mono text-left"
+                  placeholder="1BxiMvs0XRY..."
+                  dir="ltr"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">شناسه موجود در آدرس URL فایل گوگل شیت شما.</p>
+              </div>
+              {error && <div className="text-red-500 text-sm mb-4 text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</div>}
+              <button 
+                onClick={loadData}
+                disabled={loading || !spreadsheetId}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'در حال بارگذاری...' : 'ذخیره و ورود'}
+              </button>
             </div>
-            {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-            <button 
-              onClick={loadData}
-              disabled={loading || !spreadsheetId}
-              className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'در حال بارگذاری...' : 'ذخیره و دریافت اطلاعات'}
-            </button>
+            
+            <div className="w-full max-w-lg h-[400px] mt-8 relative z-0 flex-shrink-0">
+               <iframe src="https://my.spline.design/aicompanionrobot-qo7L2r4zZFOTW2oUdiyjISTi/" frameBorder="0" width="100%" height="100%" style={{ border: 'none' }}></iframe>
+            </div>
           </div>
         ) : (
           <Dashboard products={products} onRefresh={loadData} loading={loading} spreadsheetId={spreadsheetId} />
@@ -113,6 +121,7 @@ export default function App() {
         </div>
       </footer>
       {showLogs && <ActivityLogModal spreadsheetId={spreadsheetId} onClose={() => setShowLogs(false)} />}
-    </div>
+      </div>
+    </>
   );
 }
