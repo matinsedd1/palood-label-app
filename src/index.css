@@ -31,28 +31,51 @@
     print-color-adjust: exact !important;
   }
   
-  @page { size: 88mm 58mm; margin: 0 !important; }
+  @page { 
+    size: 48mm 80mm; 
+    margin: 0 !important; 
+  }
   
   html, body {
-    height: auto !important; 
+    width: 48mm !important;
+    height: 80mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     background-color: #ffffff !important;
   }
   
+  /* Hide all non-essential elements */
+  body > *:not(#root),
+  .print\:hidden {
+    display: none !important;
+  }
+
+  #root {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
   #printable-label {
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) rotate(90deg) !important;
+    transform-origin: center center !important;
     width: 80mm !important;
-    height: 40mm !important;
+    height: 48mm !important; /* matches 48mm width when rotated */
     margin: 0 !important;
     padding: 0 !important;
     background-color: #ffffff !important;
     box-shadow: none !important;
-    page-break-after: always;
-    break-after: page;
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Optimize colors and contrast: pure black and white */

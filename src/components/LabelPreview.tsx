@@ -46,6 +46,7 @@ const AutoTextScaler = ({ text }: { text: string }) => {
 
 export default function LabelPreview({ product, spreadsheetId }: LabelPreviewProps) {
   const [editableProduct, setEditableProduct] = useState<Product>(product);
+  const [isOldPrice, setIsOldPrice] = useState(false);
 
   useEffect(() => {
     setEditableProduct(product);
@@ -102,7 +103,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
       <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 md:px-6 md:py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between print:hidden">
         <h2 className="font-bold flex items-center gap-2">
           <Printer className="w-5 h-5 text-blue-600" />
-          ویرایشگر لیبل حرارتی (80x40mm)
+          ویرایشگر لیبل حرارتی (80x48mm)
         </h2>
         <button 
           onClick={() => handlePrint()}
@@ -160,14 +161,27 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                 className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">بارکد</label>
-              <input 
-                type="text" 
-                value={editableProduct.barcode}
-                onChange={(e) => handleChange('barcode', e.target.value)}
-                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+            <div className="col-span-2 flex items-end gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">بارکد</label>
+                <input 
+                  type="text" 
+                  value={editableProduct.barcode}
+                  onChange={(e) => handleChange('barcode', e.target.value)}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div className="flex items-center mb-2">
+                <label className="-mb-2 ml-0 mt-0 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-2 border border-slate-300 dark:border-slate-600 px-3 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={isOldPrice}
+                    onChange={(e) => setIsOldPrice(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                  قیمت قدیم
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -176,23 +190,23 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
         <div className="w-full lg:w-1/2 flex justify-center items-start print:w-full print:block overflow-x-auto pb-4">
           <div className="bg-white relative print:border-none print:shadow-none mx-auto overflow-hidden" 
                id="printable-label"
-               style={{ width: '80mm', height: '40mm', direction: 'rtl' }}>
+               style={{ width: '80mm', height: '48mm', direction: 'rtl' }}>
                
                                                 {/* Professional Thermal Label Layout (Flex Col) */}
             <div 
-              className="w-full h-[40mm] bg-white text-black box-border flex flex-col justify-between overflow-hidden p-[2mm] break-inside-avoid print:break-inside-avoid"
+              className="w-full h-[48mm] bg-white text-black box-border flex flex-col justify-between overflow-hidden p-[3mm] break-inside-avoid print:break-inside-avoid"
               style={{ fontFamily: '"Vazirmatn", "IRANSansX", sans-serif', direction: 'rtl' }}
             >
               {/* 1. Header: Product Name & Code */}
-              <div className="flex flex-col items-start leading-tight mb-2 w-full shrink-0">
+              <div className="flex flex-col items-start leading-tight mb-2 w-full shrink-0 mt-[2px]">
                 <AutoTextScaler text={toPersianDigits(editableProduct.name || 'نام کالا نامشخص')} />
-                <span className="text-[10px] font-medium text-black mt-0.5">
+                <span className="text-[12px] pt-[1px] font-medium text-black mt-0.5">
                   {toPersianDigits(editableProduct.code || '')}
                 </span>
               </div>
 
               {/* 2. Middle Row: Prices & Discount Badge */}
-              <div className="flex-1 flex justify-between items-start w-full -mt-1 mb-0">
+              <div className="flex-1 flex justify-between items-start w-full -mt-[5px] mb-0">
                 {/* Discount Badge (Right) */}
                 <div className="flex-shrink-0">
                   {hasDiscount && editableProduct.discountPercentage && editableProduct.discountPercentage !== '0' && editableProduct.discountPercentage !== '0.00%' && editableProduct.discountPercentage !== '0%' ? (
@@ -221,7 +235,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                   {hasDiscount ? (
                     <>
                       {/* Old Price */}
-                      <div className="flex items-center gap-1.5 mt-1 mb-0.5">
+                      <div className="flex items-center gap-1.5 mt-1 mb-0.5 pt-[5px]">
                         <span className="text-[19px] font-medium text-black/70 leading-none line-through decoration-slate-600 decoration-2">
                           {formatPricePersian(editableProduct.consumerPrice)}
                         </span>
@@ -247,7 +261,12 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
               </div>
 
               {/* 3. Footer: Date & Barcode */}
-              <div className="flex justify-between items-end w-full shrink-0 mt-[-8px] mb-0 pb-1">
+              <div className="flex justify-between items-end w-full shrink-0 mt-0 -mb-[6px] pb-1 relative">
+                {isOldPrice && (
+                  <div className="absolute left-0 bottom-[14px] mt-0 mb-[10px] ml-[24px] mr-0 text-black font-black text-[18px] whitespace-nowrap z-10">
+                    قیمت قدیم
+                  </div>
+                )}
                 {/* Bottom Right: Barcode */}
                 <div className="flex flex-col items-center break-inside-avoid print:break-inside-avoid">
                   {editableProduct.barcode ? (
@@ -281,7 +300,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                 </div>
 
                 {/* Bottom Left: Date */}
-                <div className="text-[11px] font-medium text-black leading-none mb-1">
+                <div className="text-[11px] font-medium text-black leading-none mb-0">
                   {toPersianDigits(new Date().toLocaleDateString('fa-IR').replace(/\//g, '.'))}
                 </div>
               </div>
