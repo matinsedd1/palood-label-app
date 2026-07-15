@@ -225,14 +225,14 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                         <span className="text-[19px] font-medium text-black/70 leading-none line-through decoration-slate-600 decoration-2">
                           {formatPricePersian(editableProduct.consumerPrice)}
                         </span>
-                        <img src="/toman-icon.png" alt="تومان" className="w-[14px] h-[14px] object-contain opacity-60" />
+                        <img src="/toman-icon.png" alt="تومان" className="w-[17px] h-[17px] object-contain opacity-60" />
                       </div>
                       {/* New Price */}
                       <div className="flex items-center gap-2">
                         <span className="text-[40px] font-black tracking-tighter leading-none">
                           {formatPricePersian(editableProduct.sellingPrice)}
                         </span>
-                        <img src="/toman-icon.png" alt="تومان" className="h-[26px] object-contain" />
+                        <img src="/toman-icon.png" alt="تومان" className="w-[30px] h-[30px] object-contain" />
                       </div>
                     </>
                   ) : (
@@ -240,7 +240,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                       <span className="text-[40px] font-black tracking-tighter leading-none">
                         {formatPricePersian(editableProduct.sellingPrice) || '-'}
                       </span>
-                      {editableProduct.sellingPrice && <img src="/toman-icon.png" alt="تومان" className="h-[26px] object-contain" />}
+                      {editableProduct.sellingPrice && <img src="/toman-icon.png" alt="تومان" className="w-[30px] h-[30px] object-contain" />}
                     </div>
                   )}
                 </div>

@@ -75,33 +75,35 @@ export default function App() {
 
       <main className="flex-1 flex overflow-hidden p-6 gap-6 w-full print:p-0 print:m-0 relative z-0">
         {isConfiguring ? (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-            <div className="w-full max-w-md bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 transform transition-all z-10">
-              <h2 className="text-2xl font-bold mb-6 text-center text-slate-800 dark:text-white">تنظیمات اتصال به شیت</h2>
-              <div className="mb-6">
-                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">شناسه شیت (Spreadsheet ID)</label>
-                <input 
-                  type="text" 
-                  value={spreadsheetId} 
-                  onChange={(e) => setSpreadsheetId(e.target.value)} 
-                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700/50 focus:ring-4 focus:ring-blue-500/30 outline-none transition-all font-mono text-left"
-                  placeholder="1BxiMvs0XRY..."
-                  dir="ltr"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">شناسه موجود در آدرس URL فایل گوگل شیت شما.</p>
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-start sm:justify-center bg-slate-50 dark:bg-slate-900 p-4 sm:p-8 overflow-y-auto overflow-x-hidden">
+            <div className="flex flex-col w-full max-w-md h-full min-h-[600px] justify-start sm:justify-center relative">
+              <div className="w-full bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 transform transition-all z-10 shrink-0 mt-8 sm:mt-0 relative">
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-slate-800 dark:text-white">تنظیمات اتصال به شیت</h2>
+                <div className="mb-4 sm:mb-6">
+                  <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">شناسه شیت (Spreadsheet ID)</label>
+                  <input 
+                    type="text" 
+                    value={spreadsheetId} 
+                    onChange={(e) => setSpreadsheetId(e.target.value)} 
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700/50 focus:ring-4 focus:ring-blue-500/30 outline-none transition-all font-mono text-left"
+                    placeholder="1BxiMvs0XRY..."
+                    dir="ltr"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 sm:mt-3 text-center">شناسه موجود در آدرس URL فایل گوگل شیت شما.</p>
+                </div>
+                {error && <div className="text-red-500 text-sm mb-4 text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</div>}
+                <button 
+                  onClick={loadData}
+                  disabled={loading || !spreadsheetId}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'در حال بارگذاری...' : 'ذخیره و ورود'}
+                </button>
               </div>
-              {error && <div className="text-red-500 text-sm mb-4 text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</div>}
-              <button 
-                onClick={loadData}
-                disabled={loading || !spreadsheetId}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'در حال بارگذاری...' : 'ذخیره و ورود'}
-              </button>
-            </div>
-            
-            <div className="w-full max-w-lg h-[400px] mt-8 relative z-0 flex-shrink-0">
-               <iframe src="https://my.spline.design/aicompanionrobot-qo7L2r4zZFOTW2oUdiyjISTi/" frameBorder="0" width="100%" height="100%" style={{ border: 'none' }}></iframe>
+              
+              <div className="w-full flex-1 relative z-0 min-h-[300px] -mt-10 overflow-hidden">
+                 <iframe src="https://my.spline.design/aicompanionrobot-qo7L2r4zZFOTW2oUdiyjISTi/" frameBorder="0" className="absolute inset-0 w-full h-[calc(100%+60px)] pointer-events-auto" style={{ border: 'none' }}></iframe>
+              </div>
             </div>
           </div>
         ) : (
