@@ -46,7 +46,6 @@ const AutoTextScaler = ({ text }: { text: string }) => {
 
 export default function LabelPreview({ product, spreadsheetId }: LabelPreviewProps) {
   const [editableProduct, setEditableProduct] = useState<Product>(product);
-  const [isOldPrice, setIsOldPrice] = useState(false);
 
   useEffect(() => {
     setEditableProduct(product);
@@ -171,14 +170,15 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
-              <div className="flex items-center mb-2">
-                <label className="-mb-2 ml-0 mt-0 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-2 border border-slate-300 dark:border-slate-600 px-3 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={isOldPrice}
-                    onChange={(e) => setIsOldPrice(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                  />
+              <div className="flex items-center gap-2 mb-2">
+                <input 
+                  type="checkbox" 
+                  id="isOldPrice"
+                  checked={editableProduct.isOldPrice || false}
+                  onChange={(e) => handleChange('isOldPrice', e.target.checked as any)}
+                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                />
+                <label htmlFor="isOldPrice" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                   قیمت قدیم
                 </label>
               </div>
@@ -190,7 +190,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
         <div className="w-full lg:w-1/2 flex justify-center items-start print:w-full print:block overflow-x-auto pb-4">
           <div className="bg-white relative print:border-none print:shadow-none mx-auto overflow-hidden" 
                id="printable-label"
-               style={{ width: '80mm', height: '48mm', direction: 'rtl' }}>
+               style={{ width: '80mm', height: '45mm', direction: 'rtl' }}>
                
                                                 {/* Professional Thermal Label Layout (Flex Col) */}
             <div 
@@ -206,28 +206,53 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
               </div>
 
               {/* 2. Middle Row: Prices & Discount Badge */}
-              <div className="flex-1 flex justify-between items-start w-full -mt-[5px] mb-0">
+              <div className="flex-1 flex justify-between items-start w-full mt-0 mb-0">
                 {/* Discount Badge (Right) */}
-                <div className="flex-shrink-0">
-                  {hasDiscount && editableProduct.discountPercentage && editableProduct.discountPercentage !== '0' && editableProduct.discountPercentage !== '0.00%' && editableProduct.discountPercentage !== '0%' ? (
-                    <div 
-                      className="flex flex-col items-center justify-center bg-no-repeat bg-contain bg-center print:color-adjust-exact mt-0 mb-0"
-                      style={{ 
-                        width: '66px', 
-                        height: '49px',
-                        backgroundImage: 'url(/badge-bg.png)',
-                        WebkitPrintColorAdjust: 'exact',
-                        printColorAdjust: 'exact'
-                      }}
-                    >
-                      <span className="text-[24px] font-black leading-none text-white print:text-white mt-1" dir="ltr" style={{ WebkitTextFillColor: 'white' }}>
-                        {toPersianDigits(Math.round(parseFloat(editableProduct.discountPercentage)))}٪
-                      </span>
-                      
-                    </div>
-                  ) : (
-                    <div style={{ width: '10px' }}></div>
-                  )}
+                <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: '75px', height: '49px' }}>
+                  {(() => {
+                    const isOldPrice = editableProduct.isOldPrice;
+                    const showDiscount = hasDiscount && editableProduct.discountPercentage && editableProduct.discountPercentage !== '0' && editableProduct.discountPercentage !== '0.00%' && editableProduct.discountPercentage !== '0%';
+                    
+                    if (isOldPrice && showDiscount) {
+                      return (
+                        <>
+                          <img src="/old-price.png" alt="قیمت قدیم" className="w-full h-full object-contain print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
+                          <div 
+                            className="absolute -top-2 -left-2 w-[30px] h-[30px] -mt-1 -ml-[5px] rounded-full bg-gray-300 flex items-center justify-center z-10 print:color-adjust-exact"
+                            style={{ 
+                              WebkitPrintColorAdjust: 'exact',
+                              printColorAdjust: 'exact'
+                            }}
+                          >
+                            <span className="text-[15px] font-black leading-none text-black print:text-black mt-0.5" dir="ltr" style={{ WebkitTextFillColor: 'black' }}>
+                              {toPersianDigits(Math.round(parseFloat(editableProduct.discountPercentage as string)))}٪
+                            </span>
+                          </div>
+                        </>
+                      );
+                    } else if (isOldPrice) {
+                      return <img src="/old-price.png" alt="قیمت قدیم" className="w-full h-full object-contain print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />;
+                    } else if (showDiscount) {
+                      return (
+                        <div 
+                          className="flex flex-col items-center justify-center bg-no-repeat bg-contain bg-center print:color-adjust-exact mt-0 mb-0"
+                          style={{ 
+                            width: '66px', 
+                            height: '49px',
+                            backgroundImage: 'url(/badge-bg.png)',
+                            WebkitPrintColorAdjust: 'exact',
+                            printColorAdjust: 'exact'
+                          }}
+                        >
+                          <span className="text-[24px] font-black leading-none text-white print:text-white mt-1" dir="ltr" style={{ WebkitTextFillColor: 'white' }}>
+                            {toPersianDigits(Math.round(parseFloat(editableProduct.discountPercentage as string)))}٪
+                          </span>
+                        </div>
+                      );
+                    } else {
+                      return <div style={{ width: '10px' }}></div>;
+                    }
+                  })()}
                 </div>
 
                 {/* Prices (Left) */}
@@ -235,7 +260,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                   {hasDiscount ? (
                     <>
                       {/* Old Price */}
-                      <div className="flex items-center gap-1.5 mt-1 mb-0.5 pt-[5px]">
+                      <div className="flex items-center gap-1.5 -mt-[3px] mb-0 pt-[5px]">
                         <span className="text-[19px] font-medium text-black/70 leading-none line-through decoration-slate-600 decoration-2">
                           {formatPricePersian(editableProduct.consumerPrice)}
                         </span>
@@ -261,12 +286,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
               </div>
 
               {/* 3. Footer: Date & Barcode */}
-              <div className="flex justify-between items-end w-full shrink-0 mt-0 -mb-[6px] pb-1 relative">
-                {isOldPrice && (
-                  <div className="absolute left-0 bottom-[14px] mt-0 mb-[10px] ml-[24px] mr-0 text-black font-black text-[18px] whitespace-nowrap z-10">
-                    قیمت قدیم
-                  </div>
-                )}
+              <div className="flex justify-between items-end w-full shrink-0 mt-0 mb-[2px] pb-1">
                 {/* Bottom Right: Barcode */}
                 <div className="flex flex-col items-center break-inside-avoid print:break-inside-avoid">
                   {editableProduct.barcode ? (
@@ -300,7 +320,7 @@ export default function LabelPreview({ product, spreadsheetId }: LabelPreviewPro
                 </div>
 
                 {/* Bottom Left: Date */}
-                <div className="text-[11px] font-medium text-black leading-none mb-0">
+                <div className="text-[11px] font-medium text-black leading-none mb-1">
                   {toPersianDigits(new Date().toLocaleDateString('fa-IR').replace(/\//g, '.'))}
                 </div>
               </div>
