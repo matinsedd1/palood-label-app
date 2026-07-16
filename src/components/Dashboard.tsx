@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Product } from '../types';
-import { Search, RefreshCw, Camera, Keyboard, X, Printer } from 'lucide-react';
+import { Search, RefreshCw, Camera, Keyboard, X, Printer, Loader2 } from 'lucide-react';
 import CameraScanner from './CameraScanner';
 import LabelPreview, { ThermalLabelUI } from './LabelPreview';
+import { generateAndPrintPDF } from '../utils/pdfPrint';
 
 interface PrintQueueItem {
   id: string;
@@ -25,6 +26,7 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
   const [scannerMode, setScannerMode] = useState<'none' | 'camera'>('none');
   const [printQueue, setPrintQueue] = useState<PrintQueueItem[]>([]);
   const [isBatchPrinting, setIsBatchPrinting] = useState(false);
+  const [isBatchPrintingLoading, setIsBatchPrintingLoading] = useState(false);
   const usbBufferRef = useRef('');
 
   const handleAddToQueue = (product: Product, quantity: number) => {
@@ -46,17 +48,27 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
   };
 
   const handleBatchPrint = () => {
+    if (printQueue.length === 0) return;
     setIsBatchPrinting(true);
-    document.body.classList.add('is-batch-printing');
-    setTimeout(() => {
-      if (window.self !== window.top) {
-        alert('به دلیل محدودیت‌های مرورگر در حالت پیش‌نمایش، لطفاً برنامه را در تب جدید باز کنید.');
-      }
-      window.print();
-      setTimeout(() => {
+    setIsBatchPrintingLoading(true);
+    
+    // Give React time to render the hidden batch portal
+    setTimeout(async () => {
+      try {
+        const container = document.getElementById('batch-print-portal');
+        if (container) {
+          const labels = container.querySelectorAll('.printable-label');
+          if (labels.length > 0) {
+            await generateAndPrintPDF(labels as any);
+          }
+        }
+      } catch (err: any) {
+        console.error('Batch print failed:', err);
+        alert('خطا در چاپ گروهی لیبل‌ها: ' + err.message);
+      } finally {
         setIsBatchPrinting(false);
-        document.body.classList.remove('is-batch-printing');
-      }, 500);
+        setIsBatchPrintingLoading(false);
+      }
     }, 500);
   };
 
@@ -285,10 +297,11 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
           {printQueue.length > 0 && (
             <button 
               onClick={handleBatchPrint}
-              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+              disabled={isBatchPrintingLoading}
+              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
             >
-              <Printer className="w-4 h-4" />
-              چاپ همه ({printQueue.reduce((sum, item) => sum + item.quantity, 0)} لیبل)
+              {isBatchPrintingLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Printer className="w-4 h-4" />}
+              {isBatchPrintingLoading ? 'در حال آماده‌سازی...' : `چاپ همه (${printQueue.reduce((sum, item) => sum + item.quantity, 0)} لیبل)`}
             </button>
           )}
         </div>
@@ -324,7 +337,7 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
 
       {/* Hidden Batch Print Area */}
       {isBatchPrinting && createPortal(
-        <div className="batch-print-portal">
+        <div id="batch-print-portal" className="batch-print-portal" style={{ position: 'fixed', left: 0, top: 0, zIndex: -9999, opacity: 0 }}>
           {printQueue.map((item) => 
             Array.from({ length: item.quantity }).map((_, i) => (
               /* کانتینر اختصاصی برای هر صفحه بدون هیچ استایل اضافه */

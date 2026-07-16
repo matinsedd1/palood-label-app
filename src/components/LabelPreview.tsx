@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Product } from '../types';
-import { Printer } from 'lucide-react';
+import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { appendLog } from '../api';
+import { generateAndPrintPDF } from '../utils/pdfPrint';
 
 interface LabelPreviewProps {
   product: Product;
@@ -187,7 +188,7 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
                        background="transparent" 
                        lineColor="#000000"
                        displayValue={true}
-                       fontSize={11}
+                       fontSize={11} renderer="img"
                     />
                   </div>
                 </div>
@@ -217,21 +218,33 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
 export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isBatchPrinting }: LabelPreviewProps) {
   const [editableProduct, setEditableProduct] = useState<Product>(product);
   const [quantity, setQuantity] = useState(1);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     setEditableProduct(product);
   }, [product]);
 
   const handlePrint = async () => {
-    if (window.self !== window.top) {
-      alert('به دلیل محدودیت‌های مرورگر در حالت پیش‌نمایش، لطفاً برنامه را با کلیک روی آیکون "Open in new tab" (بالا سمت راست - فلش در مربع) در تب جدید باز کنید تا دکمه چاپ به درستی کار کند.');
-    }
-    window.print();
-    if (spreadsheetId) {
-      try {
-        await appendLog(spreadsheetId, 'چاپ لیبل', editableProduct);
-      } catch (err) {
-        console.warn('Failed to log print action', err);
+    setIsPrinting(true);
+    try {
+      const container = document.getElementById('single-print-label-container');
+      if (container) {
+        const labels = container.querySelectorAll('.printable-label');
+        if (labels.length > 0) {
+          await generateAndPrintPDF(labels as any);
+        }
+      }
+    } catch (err: any) {
+      console.error('Print failed:', err);
+      alert('خطا در چاپ لیبل: ' + err.message);
+    } finally {
+      setIsPrinting(false);
+      if (spreadsheetId) {
+        try {
+          await appendLog(spreadsheetId, 'چاپ لیبل', editableProduct);
+        } catch (err) {
+          console.warn('Failed to log print action', err);
+        }
       }
     }
   };
@@ -297,9 +310,10 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
           </button>
           <button 
             onClick={() => handlePrint()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md transition-all whitespace-nowrap"
+            disabled={isPrinting}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md transition-all whitespace-nowrap flex items-center justify-center min-w-[100px]"
           >
-            چاپ سریع
+            {isPrinting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'چاپ سریع'}
           </button>
         </div>
       </div>
@@ -379,7 +393,7 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
         </div>
 
         {/* Live Preview / Printable Label Area */}
-        <div className={`w-full lg:w-1/2 flex justify-center items-start print:w-full print:block overflow-x-auto pb-4 ${isBatchPrinting ? 'print:hidden' : ''}`}>
+        <div id="single-print-label-container" className={`w-full lg:w-1/2 flex justify-center items-start print:w-full print:block overflow-x-auto pb-4 ${isBatchPrinting ? 'print:hidden' : ''}`}>
           <ThermalLabelUI product={editableProduct} />
         </div>
       </div>
