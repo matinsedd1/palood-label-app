@@ -3,7 +3,7 @@ import { Product } from '../types';
 import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { appendLog } from '../api';
-import { generateAndPrintPDF } from '../utils/pdfPrint';
+import { tomanIcon, oldPriceIcon, badgeBg } from "../utils/images";
 
 interface LabelPreviewProps {
   product: Product;
@@ -102,7 +102,7 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
               if (isOldPrice && showDiscount) {
                 return (
                   <>
-                    <img src="/old-price.png" alt="قیمت قدیم" className="w-full h-full object-contain print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
+                    <img src={oldPriceIcon} alt="قیمت قدیم" className="w-full h-full object-contain print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
                     <div 
                       className="absolute -top-1 -left-2 w-[34px] h-[34px] -ml-[10px] -mt-[8px] mb-0 rounded-full bg-gray-300 flex items-center justify-center z-10 print:color-adjust-exact"
                       style={{ 
@@ -117,7 +117,7 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
                   </>
                 );
               } else if (isOldPrice) {
-                return <img src="/old-price.png" alt="قیمت قدیم" className="w-full h-full object-contain print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />;
+                return <img src={oldPriceIcon} alt="قیمت قدیم" className="w-full h-full object-contain print:color-adjust-exact" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />;
               } else if (showDiscount) {
                 return (
                   <div 
@@ -125,7 +125,7 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
                     style={{ 
                       width: '66px', 
                       height: '49px',
-                      backgroundImage: 'url(/badge-bg.png)',
+                      backgroundImage: `url(${badgeBg})`,
                       WebkitPrintColorAdjust: 'exact',
                       printColorAdjust: 'exact'
                     }}
@@ -150,14 +150,14 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
                   <span className="text-[19px] font-medium text-black/70 leading-none line-through decoration-slate-600 decoration-2">
                     {formatPricePersian(product.consumerPrice)}
                   </span>
-                  <img src="/toman-icon.png" alt="تومان" className="w-[17px] h-[17px] object-contain opacity-60" />
+                  <img src={tomanIcon} alt="تومان" className="w-[17px] h-[17px] object-contain opacity-60" />
                 </div>
                 {/* New Price */}
                 <div className="flex items-center gap-2">
                   <span className="text-[40px] font-black tracking-tighter leading-none">
                     {formatPricePersian(product.sellingPrice)}
                   </span>
-                  <img src="/toman-icon.png" alt="تومان" className="w-[30px] h-[30px] object-contain" />
+                  <img src={tomanIcon} alt="تومان" className="w-[30px] h-[30px] object-contain" />
                 </div>
               </>
             ) : (
@@ -165,7 +165,7 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
                 <span className="text-[40px] font-black tracking-tighter leading-none">
                   {formatPricePersian(product.sellingPrice) || '-'}
                 </span>
-                {product.sellingPrice && <img src="/toman-icon.png" alt="تومان" className="w-[30px] h-[30px] object-contain" />}
+                {product.sellingPrice && <img src={tomanIcon} alt="تومان" className="w-[30px] h-[30px] object-contain" />}
               </div>
             )}
           </div>
@@ -226,27 +226,21 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
 
   const handlePrint = async () => {
     setIsPrinting(true);
-    try {
-      const container = document.getElementById('single-print-label-container');
-      if (container) {
-        const labels = container.querySelectorAll('.printable-label');
-        if (labels.length > 0) {
-          await generateAndPrintPDF(labels as any);
-        }
-      }
-    } catch (err: any) {
-      console.error('Print failed:', err);
-      alert('خطا در چاپ لیبل: ' + err.message);
-    } finally {
+    
+    setTimeout(() => {
+      window.print();
       setIsPrinting(false);
+      
       if (spreadsheetId) {
         try {
-          await appendLog(spreadsheetId, 'چاپ لیبل', editableProduct);
+          appendLog(spreadsheetId, 'چاپ لیبل', editableProduct).catch(err => {
+            console.warn('Failed to log print action', err);
+          });
         } catch (err) {
           console.warn('Failed to log print action', err);
         }
       }
-    }
+    }, 500);
   };
 
   const handleChange = (field: keyof Product, value: string) => {

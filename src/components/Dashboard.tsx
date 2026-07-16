@@ -4,7 +4,6 @@ import { Product } from '../types';
 import { Search, RefreshCw, Camera, Keyboard, X, Printer, Loader2 } from 'lucide-react';
 import CameraScanner from './CameraScanner';
 import LabelPreview, { ThermalLabelUI } from './LabelPreview';
-import { generateAndPrintPDF } from '../utils/pdfPrint';
 
 interface PrintQueueItem {
   id: string;
@@ -51,24 +50,14 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
     if (printQueue.length === 0) return;
     setIsBatchPrinting(true);
     setIsBatchPrintingLoading(true);
+    document.body.classList.add('is-batch-printing');
     
     // Give React time to render the hidden batch portal
-    setTimeout(async () => {
-      try {
-        const container = document.getElementById('batch-print-portal');
-        if (container) {
-          const labels = container.querySelectorAll('.printable-label');
-          if (labels.length > 0) {
-            await generateAndPrintPDF(labels as any);
-          }
-        }
-      } catch (err: any) {
-        console.error('Batch print failed:', err);
-        alert('خطا در چاپ گروهی لیبل‌ها: ' + err.message);
-      } finally {
-        setIsBatchPrinting(false);
-        setIsBatchPrintingLoading(false);
-      }
+    setTimeout(() => {
+      window.print();
+      document.body.classList.remove('is-batch-printing');
+      setIsBatchPrinting(false);
+      setIsBatchPrintingLoading(false);
     }, 500);
   };
 
