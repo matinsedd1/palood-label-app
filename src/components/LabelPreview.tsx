@@ -188,7 +188,7 @@ export const ThermalLabelUI = ({ product }: { product: Product }) => {
                        background="transparent" 
                        lineColor="#000000"
                        displayValue={true}
-                       fontSize={11} renderer="img"
+                       fontSize={11}
                     />
                   </div>
                 </div>
