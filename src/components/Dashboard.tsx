@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Product } from '../types';
-import { Search, RefreshCw, Camera, Keyboard, X } from 'lucide-react';
+import { Search, RefreshCw, Camera, Keyboard, X, Printer } from 'lucide-react';
 import CameraScanner from './CameraScanner';
-import LabelPreview from './LabelPreview';
+import LabelPreview, { ThermalLabelUI } from './LabelPreview';
+
+interface PrintQueueItem {
+  id: string;
+  product: Product;
+  quantity: number;
+}
 
 interface DashboardProps {
   products: Product[];
@@ -16,7 +23,42 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [scannerMode, setScannerMode] = useState<'none' | 'camera'>('none');
+  const [printQueue, setPrintQueue] = useState<PrintQueueItem[]>([]);
+  const [isBatchPrinting, setIsBatchPrinting] = useState(false);
   const usbBufferRef = useRef('');
+
+  const handleAddToQueue = (product: Product, quantity: number) => {
+    setPrintQueue(prev => {
+      const existing = prev.find(item => item.product.code === product.code);
+      if (existing) {
+        return prev.map(item => item.id === existing.id ? { ...item, quantity: item.quantity + quantity, product } : item);
+      }
+      return [...prev, { id: Math.random().toString(36).substring(7), product, quantity }];
+    });
+  };
+
+  const updateQueueItemQuantity = (id: string, quantity: number) => {
+    setPrintQueue(prev => prev.map(item => item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item));
+  };
+
+  const removeFromQueue = (id: string) => {
+    setPrintQueue(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleBatchPrint = () => {
+    setIsBatchPrinting(true);
+    document.body.classList.add('is-batch-printing');
+    setTimeout(() => {
+      if (window.self !== window.top) {
+        alert('به دلیل محدودیت‌های مرورگر در حالت پیش‌نمایش، لطفاً برنامه را در تب جدید باز کنید.');
+      }
+      window.print();
+      setTimeout(() => {
+        setIsBatchPrinting(false);
+        document.body.classList.remove('is-batch-printing');
+      }, 500);
+    }, 500);
+  };
 
   // Handle unified search
   useEffect(() => {
@@ -196,12 +238,71 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
           </div>
         )}
 
+        {/* Print Queue Section */}
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-shrink-0 flex flex-col gap-3 z-20">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">صف چاپ ({printQueue.reduce((sum, item) => sum + item.quantity, 0)})</h2>
+            {printQueue.length > 0 && (
+              <button 
+                onClick={() => setPrintQueue([])}
+                className="text-xs text-red-500 hover:text-red-600 font-medium"
+              >
+                حذف همه
+              </button>
+            )}
+          </div>
+          
+          {printQueue.length === 0 ? (
+            <div className="text-sm text-slate-400 text-center py-4">صف چاپ خالی است.</div>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto custom-scrollbar">
+              {printQueue.map(item => (
+                <div key={item.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600 text-sm">
+                  <div className="flex flex-col flex-1 truncate ml-2">
+                    <span className="font-bold truncate">{item.product.name}</span>
+                    <span className="text-xs text-slate-500">{item.product.code}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input 
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => updateQueueItemQuantity(item.id, parseInt(e.target.value) || 1)}
+                      className="w-12 p-1 border border-slate-300 dark:border-slate-500 rounded text-center dark:bg-slate-600 outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <button 
+                      onClick={() => removeFromQueue(item.id)}
+                      className="text-red-400 hover:text-red-500 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {printQueue.length > 0 && (
+            <button 
+              onClick={handleBatchPrint}
+              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              <Printer className="w-4 h-4" />
+              چاپ همه ({printQueue.reduce((sum, item) => sum + item.quantity, 0)} لیبل)
+            </button>
+          )}
+        </div>
         
             </div>
       {/* Main Content Area / Label Editor */}
       <div className="w-full lg:flex-1 flex flex-col z-10">
         {selectedProduct ? (
-          <LabelPreview product={selectedProduct} spreadsheetId={spreadsheetId} />
+          <LabelPreview 
+            product={selectedProduct} 
+            spreadsheetId={spreadsheetId} 
+            onAddToQueue={handleAddToQueue}
+            isBatchPrinting={isBatchPrinting}
+          />
         ) : (
           <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden h-full">
             <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 md:px-6 md:py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
@@ -220,6 +321,21 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
           </div>
         )}
       </div>
+
+      {/* Hidden Batch Print Area */}
+      {isBatchPrinting && createPortal(
+        <div className="batch-print-portal">
+          {printQueue.map((item) => 
+            Array.from({ length: item.quantity }).map((_, i) => (
+              /* کانتینر اختصاصی برای هر صفحه بدون هیچ استایل اضافه */
+              <div key={`${item.id}-${i}`} className="batch-page-wrapper">
+                <ThermalLabelUI product={item.product} />
+              </div>
+            ))
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

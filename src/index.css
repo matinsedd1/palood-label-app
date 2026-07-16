@@ -38,28 +38,37 @@
   
   html, body {
     width: 48mm !important;
-    height: 80mm !important;
+    height: auto !important; /* بسیار حیاتی برای آزادسازی ارتفاع */
+    min-height: 100% !important;
+    overflow: visible !important; /* بسیار حیاتی برای جلوگیری از قیچی شدن صفحات */
+    display: block !important; /* شکستن محدودیت‌های Flexbox */
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
     background-color: #ffffff !important;
   }
   
   /* Hide all non-essential elements */
-  body > *:not(#root),
+  body > *:not(#root):not(.batch-print-portal),
   .print\:hidden {
+    display: none !important;
+  }
+
+  /* مخفی کردن اپلیکیشن اصلی فقط در زمان چاپ گروهی تا تداخل ایجاد نشود */
+  body.is-batch-printing #root {
     display: none !important;
   }
 
   #root {
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important; /* بسیار حیاتی */
+    min-height: 100% !important;
+    overflow: visible !important; /* بسیار حیاتی */
+    display: block !important; /* شکستن محدودیت‌های Flexbox در React */
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
   }
 
-  #printable-label {
+  .printable-label {
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
@@ -79,7 +88,7 @@
   }
 
   /* Optimize colors and contrast: pure black and white */
-    #printable-label * {
+    .printable-label * {
     color: #000000 !important;
     border-color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
@@ -87,11 +96,11 @@
   }
 
   /* Restore background colors specifically for the label components */
-  #printable-label .bg-white {
+  .printable-label .bg-white {
     background-color: #ffffff !important;
   }
   
-  #printable-label .bg-black {
+  .printable-label .bg-black {
     background-color: #000000 !important;
     color: #ffffff !important;
   }
@@ -109,5 +118,33 @@
   }
   .dark .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: rgba(75, 85, 99, 0.5);
+  }
+}
+
+@media print {
+  /* ۱. کانتینر هر صفحه: دقیقاً ابعاد یک کاغذ فیزیکی پرینتر */
+  .batch-page-wrapper {
+    position: relative !important;
+    width: 48mm !important;
+    height: 80mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* ۲. لیبل: قفل شدن در نقطه صفر و چرخش هندسی دقیق */
+  .batch-print-portal .printable-label {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 80mm !important;
+    height: 48mm !important;
+    /* چرخش حول نقطه (24mm, 24mm) برای قرارگیری بی‌نقص در کادر 48mm */
+    transform-origin: 24mm 24mm !important;
+    transform: rotate(90deg) !important;
+    /* خنثی کردن استایل‌های حالت چاپ تکی */
+    margin: 0 !important;
   }
 }

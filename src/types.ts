@@ -8,6 +8,13 @@ export interface Product {
   barcode2?: string; // بارکد دوم
   productionDate?: string; // تاریخ تولید
   expirationDate?: string; // تاریخ انقضا
+  isOldPrice?: boolean; // نشان قیمت قدیم
+}
+
+export interface PrintQueueItem {
+  id: string;
+  product: Product;
+  quantity: number;
 }
 
 export type Theme = 'light' | 'dark';
