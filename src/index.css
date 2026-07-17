@@ -135,6 +135,13 @@
   }
 
   /* ۲. لیبل: قفل شدن در نقطه صفر و چرخش هندسی دقیق */
+
+  .batch-print-portal {
+    opacity: 1 !important;
+    position: static !important;
+    z-index: auto !important;
+    visibility: visible !important;
+  }
   .batch-print-portal .printable-label {
     position: absolute !important;
     top: 0 !important;

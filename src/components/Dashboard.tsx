@@ -397,7 +397,7 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
 
       {/* Hidden Batch Print Area */}
       {isBatchPrinting && createPortal(
-        <div id="batch-print-portal" className="batch-print-portal" style={{ position: 'fixed', left: 0, top: 0, zIndex: -9999, opacity: 0 }}>
+        <div id="batch-print-portal" className="batch-print-portal" style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -9999 }}>
           {printQueue.map((item) => 
             Array.from({ length: item.quantity }).map((_, i) => (
               /* کانتینر اختصاصی برای هر صفحه بدون هیچ استایل اضافه */
