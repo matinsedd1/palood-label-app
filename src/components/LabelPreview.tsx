@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { Product } from '../types';
 import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
@@ -227,20 +228,42 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
   const handlePrint = async () => {
     setIsPrinting(true);
     
-    setTimeout(() => {
-      window.print();
-      setIsPrinting(false);
+    try {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
-      if (spreadsheetId) {
-        try {
-          appendLog(spreadsheetId, 'چاپ لیبل', editableProduct).catch(err => {
-            console.warn('Failed to log print action', err);
+      if (isMobile) {
+        // Wait a bit to ensure rendering is complete before snapshot
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const element = document.querySelector('#single-print-label-container .printable-label') as HTMLElement;
+        if (element) {
+          const canvas = await html2canvas(element, {
+            backgroundColor: '#ffffff',
+            scale: 2
           });
-        } catch (err) {
-          console.warn('Failed to log print action', err);
+          const base64Image = canvas.toDataURL('image/png');
+          window.location.href = "rawbt:" + base64Image;
         }
+      } else {
+        setTimeout(() => {
+          window.print();
+        }, 100);
       }
-    }, 500);
+    } catch (err) {
+      console.error('Print error:', err);
+    } finally {
+      setTimeout(() => {
+        setIsPrinting(false);
+        if (spreadsheetId) {
+          try {
+            appendLog(spreadsheetId, 'چاپ لیبل', editableProduct).catch(err => {
+              console.warn('Failed to log print action', err);
+            });
+          } catch (err) {
+            console.warn('Failed to log print action', err);
+          }
+        }
+      }, 500);
+    }
   };
 
   const handleChange = (field: keyof Product, value: string) => {
