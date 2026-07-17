@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { Product } from '../types';
 import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
@@ -220,6 +221,7 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
   const [editableProduct, setEditableProduct] = useState<Product>(product);
   const [quantity, setQuantity] = useState(1);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
 
   useEffect(() => {
     setEditableProduct(product);
@@ -238,31 +240,62 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
         if (element) {
           const canvas = await html2canvas(element, {
             backgroundColor: '#ffffff',
-            scale: 2
+            scale: 2 // High quality
           });
-          const base64Image = canvas.toDataURL('image/png');
-          window.location.href = "rawbt:" + base64Image;
+          
+          const imgData = canvas.toDataURL('image/png');
+          
+          // Create PDF: 58mm x 78mm
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [58, 78]
+          });
+          
+          // Add image to PDF
+          pdf.addImage(imgData, 'PNG', 0, 0, 58, 78);
+          
+          // Get PDF as base64
+          const pdfBase64 = pdf.output('datauristring').split(',')[1];
+          
+          // Show preview modal instead of sending directly
+          setPreviewPdfBase64(pdfBase64);
+          setIsPrinting(false);
         }
       } else {
         setTimeout(() => {
           window.print();
+          setIsPrinting(false);
+          if (spreadsheetId) {
+            try {
+              appendLog(spreadsheetId, 'چاپ لیبل', editableProduct).catch(err => {
+                console.warn('Failed to log print action', err);
+              });
+            } catch (err) {
+              console.warn('Failed to log print action', err);
+            }
+          }
         }, 100);
       }
     } catch (err) {
       console.error('Print error:', err);
-    } finally {
-      setTimeout(() => {
-        setIsPrinting(false);
-        if (spreadsheetId) {
-          try {
-            appendLog(spreadsheetId, 'چاپ لیبل', editableProduct).catch(err => {
-              console.warn('Failed to log print action', err);
-            });
-          } catch (err) {
+      setIsPrinting(false);
+    }
+  };
+
+  const handleConfirmMobilePrint = () => {
+    if (previewPdfBase64) {
+      window.location.href = "rawbt:base64," + previewPdfBase64;
+      setPreviewPdfBase64(null);
+      if (spreadsheetId) {
+        try {
+          appendLog(spreadsheetId, 'چاپ لیبل', editableProduct).catch(err => {
             console.warn('Failed to log print action', err);
-          }
+          });
+        } catch (err) {
+          console.warn('Failed to log print action', err);
         }
-      }, 500);
+      }
     }
   };
 
@@ -336,6 +369,41 @@ export default function LabelPreview({ product, spreadsheetId, onAddToQueue, isB
       </div>
 
       <div className="flex-1 bg-slate-200 dark:bg-slate-900 p-4 md:p-8 flex flex-col lg:flex-row gap-6 md:gap-8 overflow-y-auto print:bg-transparent print:p-0">
+        {/* Mobile Preview Modal */}
+        {previewPdfBase64 && (
+          <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-sm w-full p-4 flex flex-col items-center">
+              <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white text-center">
+                پیش‌نمایش چاپ
+              </h3>
+              
+              <div className="border border-slate-200 dark:border-slate-700 p-2 rounded-lg bg-slate-50 dark:bg-slate-900 mb-6 flex justify-center items-center w-full">
+                <iframe 
+                  src={`data:application/pdf;base64,${previewPdfBase64}#toolbar=0&navpanes=0&scrollbar=0`}
+                  className="w-[58mm] h-[78mm] bg-white shadow-sm mx-auto"
+                  title="PDF Preview"
+                />
+              </div>
+
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setPreviewPdfBase64(null)}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors"
+                >
+                  انصراف
+                </button>
+                <button 
+                  onClick={handleConfirmMobilePrint}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm shadow-md transition-colors flex items-center justify-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  ارسال به RawBT
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Editor Form - Hidden on print */}
         <div id="label-editor-section" className="w-full lg:w-1/2 flex flex-col gap-4 print:hidden bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm h-fit">
           <div>
