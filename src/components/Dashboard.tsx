@@ -4,6 +4,7 @@ import { Product } from '../types';
 import { Search, RefreshCw, Camera, Keyboard, X, Printer, Loader2 } from 'lucide-react';
 import CameraScanner from './CameraScanner';
 import LabelPreview, { ThermalLabelUI } from './LabelPreview';
+import { generateRotatedPdfBase64 } from '../utils/pdfPrint';
 
 interface PrintQueueItem {
   id: string;
@@ -26,6 +27,7 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
   const [printQueue, setPrintQueue] = useState<PrintQueueItem[]>([]);
   const [isBatchPrinting, setIsBatchPrinting] = useState(false);
   const [isBatchPrintingLoading, setIsBatchPrintingLoading] = useState(false);
+  const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
   const usbBufferRef = useRef('');
 
   const handleAddToQueue = (product: Product, quantity: number) => {
@@ -46,19 +48,53 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
     setPrintQueue(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleBatchPrint = () => {
+  const handleBatchPrint = async () => {
     if (printQueue.length === 0) return;
+
     setIsBatchPrinting(true);
     setIsBatchPrintingLoading(true);
     document.body.classList.add('is-batch-printing');
     
-    // Give React time to render the hidden batch portal
-    setTimeout(() => {
-      window.print();
+    try {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // Give React time to render the hidden batch portal
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const elements = Array.from(document.querySelectorAll('#batch-print-portal .printable-label')) as HTMLElement[];
+        
+        if (elements.length > 0) {
+          const pdfBase64 = await generateRotatedPdfBase64(elements);
+          setPreviewPdfBase64(pdfBase64);
+        } else {
+           console.warn('No labels found for printing');
+        }
+        
+        document.body.classList.remove('is-batch-printing');
+        setIsBatchPrinting(false);
+        setIsBatchPrintingLoading(false);
+      } else {
+        setTimeout(() => {
+          window.print();
+          document.body.classList.remove('is-batch-printing');
+          setIsBatchPrinting(false);
+          setIsBatchPrintingLoading(false);
+        }, 500);
+      }
+    } catch (err) {
+      console.error('Batch print error:', err);
       document.body.classList.remove('is-batch-printing');
       setIsBatchPrinting(false);
       setIsBatchPrintingLoading(false);
-    }, 500);
+    }
+  };
+
+  const handleConfirmMobilePrint = () => {
+    if (previewPdfBase64) {
+      window.location.href = "rawbt:base64," + previewPdfBase64;
+      setPreviewPdfBase64(null);
+    }
   };
 
   // Handle unified search
@@ -323,6 +359,41 @@ export default function Dashboard({ products, onRefresh, loading, spreadsheetId 
           </div>
         )}
       </div>
+
+            {/* Mobile Preview Modal */}
+      {previewPdfBase64 && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-sm w-full p-4 flex flex-col items-center">
+            <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white text-center">
+              پیش‌نمایش چاپ گروهی
+            </h3>
+            
+            <div className="border border-slate-200 dark:border-slate-700 p-2 rounded-lg bg-slate-50 dark:bg-slate-900 mb-6 flex justify-center items-center w-full">
+              <iframe 
+                src={`data:application/pdf;base64,${previewPdfBase64}#toolbar=0&navpanes=0&scrollbar=0`}
+                className="w-[58mm] h-[78mm] bg-white shadow-sm mx-auto"
+                title="PDF Preview"
+              />
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setPreviewPdfBase64(null)}
+                className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors"
+              >
+                انصراف
+              </button>
+              <button 
+                onClick={handleConfirmMobilePrint}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm shadow-md transition-colors flex items-center justify-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                ارسال به RawBT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hidden Batch Print Area */}
       {isBatchPrinting && createPortal(
